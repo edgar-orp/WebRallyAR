@@ -1,30 +1,44 @@
-<!DOCTYPE html>
-<html>
+﻿<!DOCTYPE html>
+<html lang="es">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <title>Bienvenido a WebAR Rally</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body, html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-family: sans-serif;
-      background: #111;
-      color: white;
+      margin: 0; padding: 0; height: 100%;
+      display: flex; justify-content: center; align-items: center;
+      font-family: sans-serif; background: #111; color: white;
     }
-    #container {
-      text-align: center;
-    }
+    #container { text-align: center; }
     input, button {
-      padding: 1em;
-      font-size: 1.2em;
-      margin: 10px;
+      padding: 1em; font-size: 1.2em; margin: 10px;
     }
   </style>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAV2jHyfZ9WxLwOVO7BRZYce73Xia1oRRU",
+      authDomain: "webrallyar.firebaseapp.com",
+      projectId: "webrallyar",
+      storageBucket: "webrallyar.appspot.com",
+      messagingSenderId: "388094391567",
+      appId: "1:388094391567:web:073e9b29edd428ec8e7a7a",
+      measurementId: "G-44923GKZFM"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Exportamos funciones para usar en window
+    window.db = db;
+    window.addDoc = addDoc;
+    window.collection = collection;
+    window.serverTimestamp = serverTimestamp;
+  </script>
 </head>
 <body>
   <div id="container">
@@ -36,12 +50,25 @@
   </div>
 
   <script>
-    function startExperience() {
+    async function startExperience() {
       const userId = document.getElementById("userIdInput").value.trim();
       if (!userId) {
         alert("Por favor ingresa tu ID o correo.");
         return;
       }
+
+      try {
+        await addDoc(collection(db, "participants"), {
+          user_id: userId,
+          timestamp: serverTimestamp()
+        });
+        console.log("✅ Usuario guardado en Firestore:", userId);
+      } catch (error) {
+        console.error("❌ Error guardando usuario en Firestore:", error);
+        alert("Error guardando tu información. Intenta de nuevo.");
+        return;
+      }
+
       localStorage.setItem("user_id", userId);
       window.location.href = "ar.html";
     }
