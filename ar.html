@@ -34,11 +34,12 @@
         return;
       }
       const userRef = doc(db, "participants", userId);
+      const formattedName = `Target_${String(targetIndex).padStart(2, '0')}`;
       try {
         await updateDoc(userRef, {
-          scanned_targets: arrayUnion(targetIndex)
+          scanned_targets: arrayUnion(formattedName)
         });
-        console.log(`Target ${targetIndex} agregado al usuario ${userId}`);
+        console.log(`Target ${formattedName} agregado al usuario ${userId}`);
       } catch (error) {
         console.error("Error actualizando targets:", error);
       }
@@ -133,4 +134,13 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const el = document.documentE
+      const el = document.documentElement;
+      if (el.requestFullscreen) {
+        el.requestFullscreen();
+      } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+      }
+    });
+  </script>
+</body>
+</html>
