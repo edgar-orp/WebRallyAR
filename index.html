@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <title>WebAR Rally</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+    
     <!-- Firebase SDK -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -31,87 +31,101 @@
           return;
         }
 
-        // Oculta pantalla de inicio
+        // Ocultar pantalla de inicio
         document.getElementById("start-screen").remove();
 
-        // Crea el a-scene dinámicamente
-        const arContainer = document.getElementById("ar-container");
-        arContainer.innerHTML = `
-          <a-scene
-            embedded
-            mindar-image="imageTargetSrc: ./targets.mind;"
-            color-space="sRGB"
-            renderer="colorManagement: true, physicallyCorrectLights"
-            vr-mode-ui="enabled: false"
-            device-orientation-permission-ui="enabled: false"
-          >
-            <a-assets>
-              <a-asset-item id="astroModel" src="./astronauta.glb"></a-asset-item>
-              <a-asset-item id="ovniModel" src="./ovni.glb"></a-asset-item>
-              <img id="imgTarget1" src="./target1.png" />
-              <img id="imgTarget2" src="./target2.png" />
-            </a-assets>
+        // Cargar dinámicamente A-Frame y MindAR
+        const script1 = document.createElement('script');
+        script1.src = "https://aframe.io/releases/1.6.0/aframe.min.js";
 
-            <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+        const script2 = document.createElement('script');
+        script2.src = "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js";
 
-            <a-entity mindar-image-target="targetIndex: 0">
-              <a-plane src="#imgTarget1" position="0 0 0" width="1" height="0.552"></a-plane>
-              <a-gltf-model src="#astroModel" position="0 0 0.1" scale="0.4 0.4 0.4"></a-gltf-model>
-            </a-entity>
+        const css = document.createElement('link');
+        css.rel = "stylesheet";
+        css.href = "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.css";
+        document.head.appendChild(css);
 
-            <a-entity mindar-image-target="targetIndex: 1">
-              <a-plane src="#imgTarget2" position="0 0 0" width="1" height="0.552"></a-plane>
-              <a-gltf-model src="#ovniModel" position="0 0 0.1" scale="0.3 0.3 0.3"></a-gltf-model>
-            </a-entity>
-          </a-scene>
-        `;
+        script2.onload = () => {
+          // Solo insertamos el a-scene cuando ambas librerías estén listas
+          const arContainer = document.getElementById("ar-container");
+          arContainer.innerHTML = `
+            <a-scene
+              embedded
+              mindar-image="imageTargetSrc: ./targets.mind;"
+              color-space="sRGB"
+              renderer="colorManagement: true, physicallyCorrectLights"
+              vr-mode-ui="enabled: false"
+              device-orientation-permission-ui="enabled: false"
+            >
+              <a-assets>
+                <a-asset-item id="astroModel" src="./astronauta.glb"></a-asset-item>
+                <a-asset-item id="ovniModel" src="./ovni.glb"></a-asset-item>
+                <img id="imgTarget1" src="./target1.png" />
+                <img id="imgTarget2" src="./target2.png" />
+              </a-assets>
 
-        // Espera que la escena se cargue y se vincule
-        setTimeout(() => {
-          document.querySelectorAll('a-entity[mindar-image-target]').forEach((targetEntity, index) => {
-            targetEntity.addEventListener("targetFound", async () => {
-              console.log(`Target ${index} detectado`);
-              try {
-                await addDoc(collection(db, "user_tracking"), {
-                  user_id: userId,
-                  target_id: index,
-                  timestamp: new Date()
-                });
-                console.log("Guardado en Firestore");
-              } catch (e) {
-                console.error("Error guardando:", e);
-              }
+              <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+              <a-entity mindar-image-target="targetIndex: 0">
+                <a-plane src="#imgTarget1" position="0 0 0" width="1" height="0.552"></a-plane>
+                <a-gltf-model src="#astroModel" position="0 0 0.1" scale="0.4 0.4 0.4"></a-gltf-model>
+              </a-entity>
+
+              <a-entity mindar-image-target="targetIndex: 1">
+                <a-plane src="#imgTarget2" position="0 0 0" width="1" height="0.552"></a-plane>
+                <a-gltf-model src="#ovniModel" position="0 0 0.1" scale="0.3 0.3 0.3"></a-gltf-model>
+              </a-entity>
+            </a-scene>
+          `;
+
+          // Esperar a que cargue el a-scene
+          setTimeout(() => {
+            document.querySelectorAll('a-entity[mindar-image-target]').forEach((targetEntity, index) => {
+              targetEntity.addEventListener("targetFound", async () => {
+                console.log(`Target ${index} detectado`);
+                try {
+                  await addDoc(collection(db, "user_tracking"), {
+                    user_id: userId,
+                    target_id: index,
+                    timestamp: new Date()
+                  });
+                  console.log("Guardado en Firestore");
+                } catch (e) {
+                  console.error("Error guardando:", e);
+                }
+              });
             });
-          });
-        }, 1000); // espera un poco a que MindAR inicialice
+          }, 1000);
+        };
+
+        document.head.appendChild(script1);
+        document.head.appendChild(script2);
       };
     </script>
 
-    <!-- Librerías externas para AR -->
-    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.css" />
-
-    <!-- Estilos -->
     <style>
       html, body {
         margin: 0;
         padding: 0;
-        width: 100%;
-        height: 100%;
         background: black;
         overflow: hidden;
+        width: 100%;
+        height: 100%;
       }
 
       #start-screen {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: black;
+        color: white;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        height: 100%;
-        background: black;
-        color: white;
         font-family: sans-serif;
+        z-index: 10;
       }
 
       #start-screen input {
@@ -136,7 +150,7 @@
   </head>
 
   <body>
-    <!-- Pantalla inicial -->
+    <!-- Pantalla de inicio -->
     <div id="start-screen">
       <h1>WebAR Rally</h1>
       <p>Ingresa tu correo o ID</p>
@@ -144,7 +158,7 @@
       <button onclick="startAR()">Comenzar</button>
     </div>
 
-    <!-- Contenedor de AR (se llena dinámicamente) -->
+    <!-- Aquí se inserta el AR dinámicamente -->
     <div id="ar-container"></div>
   </body>
 </html>
