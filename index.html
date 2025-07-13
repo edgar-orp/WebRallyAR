@@ -2,39 +2,97 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>MindAR - 2 Targets con Visuales</title>
+    <title>WebAR Rally</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- Librerías -->
+    <!-- Firebase -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyAV2jHyfZ9WxLwOVO7BRZYce73Xia1oRRU",
+        authDomain: "webrallyar.firebaseapp.com",
+        projectId: "webrallyar",
+        storageBucket: "webrallyar.appspot.com",
+        messagingSenderId: "388094391567",
+        appId: "1:388094391567:web:073e9b29edd428ec8e7a7a",
+        measurementId: "G-44923GKZFM"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      window.startAR = async () => {
+        const input = document.getElementById("user-input");
+        const userId = input.value.trim();
+        if (!userId) {
+          alert("Por favor ingresa tu correo o ID.");
+          return;
+        }
+
+        // Oculta pantalla inicial y muestra la escena AR
+        document.getElementById("start-screen").style.display = "none";
+        document.getElementById("ar-scene").style.display = "block";
+
+        // Espera que el DOM cargue
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Espera a que el modelo y targets estén disponibles
+        document.querySelectorAll('a-entity[mindar-image-target]').forEach((targetEntity, index) => {
+          targetEntity.addEventListener("targetFound", async () => {
+            console.log(`Target ${index} detectado`);
+            try {
+              const docRef = await addDoc(collection(db, "user_tracking"), {
+                user_id: userId,
+                target_id: index,
+                timestamp: new Date()
+              });
+              console.log("Guardado:", docRef.id);
+            } catch (e) {
+              console.error("Error guardando:", e);
+            }
+          });
+        });
+      };
+    </script>
+
+    <!-- Librerías A-Frame y MindAR -->
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.css" />
 
-    <!-- Estilos pantalla completa -->
     <style>
       html, body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
+        margin: 0; padding: 0; width: 100%; height: 100%;
+        background-color: black; overflow: hidden;
+      }
+      #start-screen {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        background: black;
+        color: white;
+        font-family: sans-serif;
+      }
+      #start-screen input {
+        padding: 10px;
+        font-size: 16px;
+        width: 80%;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      #start-screen button {
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      #ar-scene {
+        display: none;
         width: 100%;
         height: 100%;
-        position: fixed;
-        background-color: black;
-      }
-
-      canvas, video, #arjs-video {
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        object-fit: cover !important;
-        z-index: -1;
-      }
-
-      a-scene {
-        width: 100% !important;
-        height: 100% !important;
         position: absolute;
         top: 0;
         left: 0;
@@ -43,7 +101,17 @@
   </head>
 
   <body>
+    <!-- Pantalla de inicio -->
+    <div id="start-screen">
+      <h1>WebAR Rally</h1>
+      <p>Ingresa tu correo o ID para comenzar</p>
+      <input id="user-input" type="text" placeholder="ej. usuario@correo.com" />
+      <button onclick="startAR()">Comenzar</button>
+    </div>
+
+    <!-- Escena AR -->
     <a-scene
+      id="ar-scene"
       embedded
       mindar-image="imageTargetSrc: ./targets.mind;"
       color-space="sRGB"
@@ -52,52 +120,25 @@
       device-orientation-permission-ui="enabled: false"
     >
       <a-assets>
-        <!-- Modelos GLB -->
         <a-asset-item id="astroModel" src="./astronauta.glb"></a-asset-item>
         <a-asset-item id="ovniModel" src="./ovni.glb"></a-asset-item>
-
-        <!-- Imágenes de los targets -->
         <img id="imgTarget1" src="./target1.png" />
         <img id="imgTarget2" src="./target2.png" />
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- Target 0: Astronauta -->
+      <!-- Target 0 -->
       <a-entity mindar-image-target="targetIndex: 0">
-        <a-plane src="#imgTarget1" position="0 0 0" height="0.552" width="1"></a-plane>
-        <a-gltf-model
-          src="#astroModel"
-          position="0 0 0.1"
-          rotation="0 0 0"
-          scale="0.4 0.4 0.4"
-          animation="property: rotation; to: 0 360 0; dur: 4000; easing: linear; loop: true"
-        ></a-gltf-model>
+        <a-plane src="#imgTarget1" position="0 0 0" width="1" height="0.552"></a-plane>
+        <a-gltf-model src="#astroModel" position="0 0 0.1" rotation="0 0 0" scale="0.4 0.4 0.4"></a-gltf-model>
       </a-entity>
 
-      <!-- Target 1: OVNI -->
+      <!-- Target 1 -->
       <a-entity mindar-image-target="targetIndex: 1">
-        <a-plane src="#imgTarget2" position="0 0 0" height="0.552" width="1"></a-plane>
-        <a-gltf-model
-          src="#ovniModel"
-          position="0 0 0.1"
-          rotation="0 0 0"
-          scale="0.3 0.3 0.3"
-          animation="property: position; to: 0 0.1 0; dur: 1000; dir: alternate; easing: easeInOutSine; loop: true"
-        ></a-gltf-model>
+        <a-plane src="#imgTarget2" position="0 0 0" width="1" height="0.552"></a-plane>
+        <a-gltf-model src="#ovniModel" position="0 0 0.1" rotation="0 0 0" scale="0.3 0.3 0.3"></a-gltf-model>
       </a-entity>
     </a-scene>
-
-    <!-- Pantalla completa -->
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const el = document.documentElement;
-        if (el.requestFullscreen) {
-          el.requestFullscreen();
-        } else if (el.webkitRequestFullscreen) {
-          el.webkitRequestFullscreen();
-        }
-      });
-    </script>
   </body>
 </html>
