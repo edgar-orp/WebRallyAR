@@ -1,53 +1,45 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>WebAR Rally</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    
-    <!-- Firebase SDK -->
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-      import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-      const firebaseConfig = {
-        apiKey: "AIzaSyAV2jHyfZ9WxLwOVO7BRZYce73Xia1oRRU",
-        authDomain: "webrallyar.firebaseapp.com",
-        projectId: "webrallyar",
-        storageBucket: "webrallyar.appspot.com",
-        messagingSenderId: "388094391567",
-        appId: "1:388094391567:web:073e9b29edd428ec8e7a7a",
-        measurementId: "G-44923GKZFM"
-      };
+  const firebaseConfig = {
+    apiKey: "AIzaSyAV2jHyfZ9WxLwOVO7BRZYce73Xia1oRRU",
+    authDomain: "webrallyar.firebaseapp.com",
+    projectId: "webrallyar",
+    storageBucket: "webrallyar.appspot.com",
+    messagingSenderId: "388094391567",
+    appId: "1:388094391567:web:073e9b29edd428ec8e7a7a",
+    measurementId: "G-44923GKZFM"
+  };
 
-      const app = initializeApp(firebaseConfig);
-      const db = getFirestore(app);
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-      window.startAR = async () => {
-        const input = document.getElementById("user-input");
-        const userId = input.value.trim();
-        if (!userId) {
-          alert("Por favor ingresa tu correo o ID.");
-          return;
-        }
+  window.startAR = async () => {
+    const input = document.getElementById("user-input");
+    const userId = input.value.trim();
+    if (!userId) {
+      alert("Por favor ingresa tu correo o ID.");
+      return;
+    }
 
-        // Ocultar pantalla de inicio
-        document.getElementById("start-screen").remove();
+    document.getElementById("start-screen").remove();
 
-        // Cargar dinámicamente A-Frame y MindAR
-        const script1 = document.createElement('script');
-        script1.src = "https://aframe.io/releases/1.6.0/aframe.min.js";
+    // Cargar A-Frame primero
+    const scriptAFrame = document.createElement('script');
+    scriptAFrame.src = "https://aframe.io/releases/1.6.0/aframe.min.js";
+    scriptAFrame.onload = () => {
+      // Ahora que A-Frame está listo, cargar MindAR
+      const css = document.createElement('link');
+      css.rel = "stylesheet";
+      css.href = "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.css";
+      document.head.appendChild(css);
 
-        const script2 = document.createElement('script');
-        script2.src = "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js";
-
-        const css = document.createElement('link');
-        css.rel = "stylesheet";
-        css.href = "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.css";
-        document.head.appendChild(css);
-
-        script2.onload = () => {
-          // Solo insertamos el a-scene cuando ambas librerías estén listas
+      const scriptMindAR = document.createElement('script');
+      scriptMindAR.src = "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js";
+      scriptMindAR.onload = () => {
+        // Esperamos un breve momento para asegurar que todo esté listo
+        setTimeout(() => {
           const arContainer = document.getElementById("ar-container");
           arContainer.innerHTML = `
             <a-scene
@@ -79,7 +71,7 @@
             </a-scene>
           `;
 
-          // Esperar a que cargue el a-scene
+          // Agregar listeners para guardar en Firestore
           setTimeout(() => {
             document.querySelectorAll('a-entity[mindar-image-target]').forEach((targetEntity, index) => {
               targetEntity.addEventListener("targetFound", async () => {
@@ -97,68 +89,12 @@
               });
             });
           }, 1000);
-        };
-
-        document.head.appendChild(script1);
-        document.head.appendChild(script2);
+        }, 500); // Espera corta antes de renderizar
       };
-    </script>
 
-    <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        background: black;
-        overflow: hidden;
-        width: 100%;
-        height: 100%;
-      }
+      document.head.appendChild(scriptMindAR);
+    };
 
-      #start-screen {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        background: black;
-        color: white;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        font-family: sans-serif;
-        z-index: 10;
-      }
-
-      #start-screen input {
-        padding: 10px;
-        font-size: 16px;
-        width: 80%;
-        margin-bottom: 20px;
-        text-align: center;
-      }
-
-      #start-screen button {
-        padding: 10px 20px;
-        font-size: 16px;
-        cursor: pointer;
-      }
-
-      #ar-container {
-        width: 100%;
-        height: 100%;
-      }
-    </style>
-  </head>
-
-  <body>
-    <!-- Pantalla de inicio -->
-    <div id="start-screen">
-      <h1>WebAR Rally</h1>
-      <p>Ingresa tu correo o ID</p>
-      <input id="user-input" type="text" placeholder="ej. usuario@correo.com" />
-      <button onclick="startAR()">Comenzar</button>
-    </div>
-
-    <!-- Aquí se inserta el AR dinámicamente -->
-    <div id="ar-container"></div>
-  </body>
-</html>
+    document.head.appendChild(scriptAFrame);
+  };
+</script>
