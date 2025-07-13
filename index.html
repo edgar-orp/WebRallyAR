@@ -1,100 +1,50 @@
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyAV2jHyfZ9WxLwOVO7BRZYce73Xia1oRRU",
-    authDomain: "webrallyar.firebaseapp.com",
-    projectId: "webrallyar",
-    storageBucket: "webrallyar.appspot.com",
-    messagingSenderId: "388094391567",
-    appId: "1:388094391567:web:073e9b29edd428ec8e7a7a",
-    measurementId: "G-44923GKZFM"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  window.startAR = async () => {
-    const input = document.getElementById("user-input");
-    const userId = input.value.trim();
-    if (!userId) {
-      alert("Por favor ingresa tu correo o ID.");
-      return;
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Bienvenido a WebAR Rally</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: sans-serif;
+      background: #111;
+      color: white;
     }
+    #container {
+      text-align: center;
+    }
+    input, button {
+      padding: 1em;
+      font-size: 1.2em;
+      margin: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <h1>WebAR Rally</h1>
+    <p>Ingresa tu correo o ID:</p>
+    <input type="text" id="userIdInput" placeholder="Tu correo o ID..." />
+    <br />
+    <button onclick="startExperience()">Comenzar</button>
+  </div>
 
-    document.getElementById("start-screen").remove();
-
-    // Cargar A-Frame primero
-    const scriptAFrame = document.createElement('script');
-    scriptAFrame.src = "https://aframe.io/releases/1.6.0/aframe.min.js";
-    scriptAFrame.onload = () => {
-      // Ahora que A-Frame está listo, cargar MindAR
-      const css = document.createElement('link');
-      css.rel = "stylesheet";
-      css.href = "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.css";
-      document.head.appendChild(css);
-
-      const scriptMindAR = document.createElement('script');
-      scriptMindAR.src = "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js";
-      scriptMindAR.onload = () => {
-        // Esperamos un breve momento para asegurar que todo esté listo
-        setTimeout(() => {
-          const arContainer = document.getElementById("ar-container");
-          arContainer.innerHTML = `
-            <a-scene
-              embedded
-              mindar-image="imageTargetSrc: ./targets.mind;"
-              color-space="sRGB"
-              renderer="colorManagement: true, physicallyCorrectLights"
-              vr-mode-ui="enabled: false"
-              device-orientation-permission-ui="enabled: false"
-            >
-              <a-assets>
-                <a-asset-item id="astroModel" src="./astronauta.glb"></a-asset-item>
-                <a-asset-item id="ovniModel" src="./ovni.glb"></a-asset-item>
-                <img id="imgTarget1" src="./target1.png" />
-                <img id="imgTarget2" src="./target2.png" />
-              </a-assets>
-
-              <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-              <a-entity mindar-image-target="targetIndex: 0">
-                <a-plane src="#imgTarget1" position="0 0 0" width="1" height="0.552"></a-plane>
-                <a-gltf-model src="#astroModel" position="0 0 0.1" scale="0.4 0.4 0.4"></a-gltf-model>
-              </a-entity>
-
-              <a-entity mindar-image-target="targetIndex: 1">
-                <a-plane src="#imgTarget2" position="0 0 0" width="1" height="0.552"></a-plane>
-                <a-gltf-model src="#ovniModel" position="0 0 0.1" scale="0.3 0.3 0.3"></a-gltf-model>
-              </a-entity>
-            </a-scene>
-          `;
-
-          // Agregar listeners para guardar en Firestore
-          setTimeout(() => {
-            document.querySelectorAll('a-entity[mindar-image-target]').forEach((targetEntity, index) => {
-              targetEntity.addEventListener("targetFound", async () => {
-                console.log(`Target ${index} detectado`);
-                try {
-                  await addDoc(collection(db, "user_tracking"), {
-                    user_id: userId,
-                    target_id: index,
-                    timestamp: new Date()
-                  });
-                  console.log("Guardado en Firestore");
-                } catch (e) {
-                  console.error("Error guardando:", e);
-                }
-              });
-            });
-          }, 1000);
-        }, 500); // Espera corta antes de renderizar
-      };
-
-      document.head.appendChild(scriptMindAR);
-    };
-
-    document.head.appendChild(scriptAFrame);
-  };
-</script>
+  <script>
+    function startExperience() {
+      const userId = document.getElementById("userIdInput").value.trim();
+      if (!userId) {
+        alert("Por favor ingresa tu ID o correo.");
+        return;
+      }
+      localStorage.setItem("user_id", userId);
+      window.location.href = "ar.html";
+    }
+  </script>
+</body>
+</html>

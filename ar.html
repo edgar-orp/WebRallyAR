@@ -1,0 +1,142 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>WebAR AR View</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Librerías de A-Frame y MindAR -->
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.css" />
+
+    <!-- Firebase SDK -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyAV2jHyfZ9WxLwOVO7BRZYce73Xia1oRRU",
+        authDomain: "webrallyar.firebaseapp.com",
+        projectId: "webrallyar",
+        storageBucket: "webrallyar.appspot.com",
+        messagingSenderId: "388094391567",
+        appId: "1:388094391567:web:073e9b29edd428ec8e7a7a",
+        measurementId: "G-44923GKZFM"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      // Esperar a que el DOM cargue
+      window.addEventListener("DOMContentLoaded", () => {
+        const userId = localStorage.getItem("user_id") || "anon";
+
+        // Evento cuando se detecta un target
+        document.querySelectorAll("[mindar-image-target]").forEach((targetEntity) => {
+          targetEntity.addEventListener("targetFound", async () => {
+            const index = targetEntity.getAttribute("mindar-image-target").targetIndex;
+            try {
+              await addDoc(collection(db, "rally_logs"), {
+                user_id: userId,
+                target_id: index,
+                timestamp: serverTimestamp()
+              });
+              console.log(`✅ Guardado: usuario ${userId}, target ${index}`);
+            } catch (error) {
+              console.error("❌ Error al guardar:", error);
+            }
+          });
+        });
+      });
+    </script>
+
+    <!-- Estilos -->
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+        position: fixed;
+        background-color: black;
+      }
+      canvas, video, #arjs-video {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
+        z-index: -1;
+      }
+      a-scene {
+        width: 100% !important;
+        height: 100% !important;
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+    </style>
+  </head>
+
+  <body>
+    <a-scene
+      embedded
+      mindar-image="imageTargetSrc: ./targets.mind;"
+      color-space="sRGB"
+      renderer="colorManagement: true, physicallyCorrectLights"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: false"
+    >
+      <a-assets>
+        <!-- Modelos -->
+        <a-asset-item id="astroModel" src="./astronauta.glb"></a-asset-item>
+        <a-asset-item id="ovniModel" src="./ovni.glb"></a-asset-item>
+
+        <!-- Imágenes de los targets -->
+        <img id="imgTarget1" src="./target1.png" />
+        <img id="imgTarget2" src="./target2.png" />
+      </a-assets>
+
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+      <!-- Target 0: Astronauta -->
+      <a-entity mindar-image-target="targetIndex: 0">
+        <a-plane src="#imgTarget1" position="0 0 0" height="0.552" width="1"></a-plane>
+        <a-gltf-model
+          src="#astroModel"
+          position="0 0 0.1"
+          rotation="0 0 0"
+          scale="0.4 0.4 0.4"
+          animation="property: rotation; to: 0 360 0; dur: 4000; easing: linear; loop: true"
+        ></a-gltf-model>
+      </a-entity>
+
+      <!-- Target 1: OVNI -->
+      <a-entity mindar-image-target="targetIndex: 1">
+        <a-plane src="#imgTarget2" position="0 0 0" height="0.552" width="1"></a-plane>
+        <a-gltf-model
+          src="#ovniModel"
+          position="0 0 0.1"
+          rotation="0 0 0"
+          scale="0.3 0.3 0.3"
+          animation="property: position; to: 0 0.1 0; dur: 1000; dir: alternate; easing: easeInOutSine; loop: true"
+        ></a-gltf-model>
+      </a-entity>
+    </a-scene>
+
+    <!-- Pantalla completa -->
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const el = document.documentElement;
+        if (el.requestFullscreen) {
+          el.requestFullscreen();
+        } else if (el.webkitRequestFullscreen) {
+          el.webkitRequestFullscreen();
+        }
+      });
+    </script>
+  </body>
+</html>
