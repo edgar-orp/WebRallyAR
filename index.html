@@ -18,7 +18,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAV2jHyfZ9WxLwOVO7BRZYce73Xia1oRRU",
@@ -33,11 +33,25 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Exportamos funciones para usar en window
     window.db = db;
-    window.addDoc = addDoc;
-    window.collection = collection;
+    window.doc = doc;
+    window.getDoc = getDoc;
+    window.setDoc = setDoc;
     window.serverTimestamp = serverTimestamp;
+
+    async function saveUser(userId) {
+      const userRef = doc(db, "participants", userId);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) {
+        await setDoc(userRef, {
+          user_id: userId,
+          timestamp: serverTimestamp(),
+          scanned_targets: []
+        });
+      }
+    }
+
+    window.saveUser = saveUser;
   </script>
 </head>
 <body>
@@ -58,11 +72,8 @@
       }
 
       try {
-        await addDoc(collection(db, "participants"), {
-          user_id: userId,
-          timestamp: serverTimestamp()
-        });
-        console.log("✅ Usuario guardado en Firestore:", userId);
+        await saveUser(userId);
+        console.log("✅ Usuario guardado o ya existente:", userId);
       } catch (error) {
         console.error("❌ Error guardando usuario en Firestore:", error);
         alert("Error guardando tu información. Intenta de nuevo.");
